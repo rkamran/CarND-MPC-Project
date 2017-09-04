@@ -77,7 +77,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    //cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -98,38 +98,76 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
 
+          Eigen::VectorXd ptsxASvector = Eigen::VectorXd::Map(ptsx.data(), 6);
+          Eigen::VectorXd ptsyASvector = Eigen::VectorXd::Map(ptsy.data(), 6);
+
+          //--> Vehicle coordinate
+          for (int i = 0; i < ptsxASvector.size(); i++) {
+            double x = ptsxASvector[i]-px;
+            double y = ptsyASvector[i]-py;
+            ptsxASvector[i] = x * cos(0-psi) - y * sin(0-psi);
+            ptsyASvector[i] = x * sin(0-psi) + y * cos(0-psi);
+          }
+
+          //--> Fitting a polynomial -- Using 3rd degree
+          auto coeffs = polyfit(ptsxASvector, ptsyASvector, 3);
+
+          //--> cte and epsi
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+
+          //--> Zero state -- current state
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+
+          //--> Solve using MPC
+          auto x1 = mpc.Solve(state, coeffs);
+
+          //--> Get the new steer and throttle values
+          double steer_value = x1[0];
+          double throttle_value = x1[1];
+
+          //--> Way points
+          vector<double> waypoint_x;
+          vector<double> waypoint_y;
+          waypoint_x.resize(ptsxASvector.size());
+          waypoint_y.resize(ptsyASvector.size());
+
+          vector<double> mpc_x_vector;
+          vector<double> mpc_y_vector;
+
+          for (int i = 0; i < ptsxASvector.size(); i++) {
+        	  	  waypoint_x[i] = ptsxASvector[i];
+        	  	  waypoint_y[i] = ptsyASvector[i];
+          }
+
+          //--> Push points to mpc vector
+//          for (int i = 2; i < x1.size(); i++) {
+//            if(i%2 == 0){
+//              mpc_x_vector.push_back(x1[i]);
+//            } else {
+//              mpc_y_vector.push_back(x1[i]);
+//            }
+//          }
+
+
+          for (int i = 2; i < x1.size(); i+=2) {
+            mpc_x_vector.push_back(x1[i]);
+            mpc_y_vector.push_back(x1[i+1]);
+          }
+
+          // sending values in json format
           json msgJson;
-          // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
-          // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
-
-          //Display the MPC predicted trajectory 
-          vector<double> mpc_x_vals;
-          vector<double> mpc_y_vals;
-
-          //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
-          // the points in the simulator are connected by a Green line
-
-          msgJson["mpc_x"] = mpc_x_vals;
-          msgJson["mpc_y"] = mpc_y_vals;
-
-          //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
-
-          //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
-          // the points in the simulator are connected by a Yellow line
-
-          msgJson["next_x"] = next_x_vals;
-          msgJson["next_y"] = next_y_vals;
-
+          msgJson["next_x"] = waypoint_x;
+          msgJson["next_y"] = waypoint_y;
+          msgJson["mpc_x"] = mpc_x_vector;
+          msgJson["mpc_y"] = mpc_y_vector;
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
