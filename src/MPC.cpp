@@ -8,7 +8,7 @@
 using CppAD::AD;
 
 size_t N = 20;
-double dt = 0.20;
+double dt = 0.2;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -51,8 +51,8 @@ class FG_eval {
 
     // Reference State Cost
     for (int index = 0; index < N; index++) {
-      fg[0] += 2000 * CppAD::pow(vars[cte_start + index] , 2);
-      fg[0] += 2000 * CppAD::pow(vars[epsi_start + index] , 2);
+      fg[0] += 2500 * CppAD::pow(vars[cte_start + index] , 2);
+      fg[0] += 2500 * CppAD::pow(vars[epsi_start + index] , 2);
       fg[0] += CppAD::pow(vars[v_start + index] - ref_v, 2);
     }
 

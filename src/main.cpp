@@ -142,16 +142,6 @@ int main() {
         	  	  waypoint_y[i] = ptsyASvector[i];
           }
 
-          //--> Push points to mpc vector
-//          for (int i = 2; i < x1.size(); i++) {
-//            if(i%2 == 0){
-//              mpc_x_vector.push_back(x1[i]);
-//            } else {
-//              mpc_y_vector.push_back(x1[i]);
-//            }
-//          }
-
-
           for (int i = 2; i < x1.size(); i+=2) {
             mpc_x_vector.push_back(x1[i]);
             mpc_y_vector.push_back(x1[i+1]);
