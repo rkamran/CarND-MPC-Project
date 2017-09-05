@@ -99,6 +99,18 @@ for (int index = 0; index < N - 2; index++) {
 }
 ```
 
+
+To account for latency we use a previous actuation to control the car. The following line for code were added to acount for latency
+
+```
+  //-->Adjust or latency
+  if (index > 1) {
+	  delta0 = vars[delta_start + index - 2];
+	  a0 = vars[a_start + index - 2];
+  }
+
+```
+
 #### Rubric 3: Simulation ####
 
 A full round across the track can be watched in the video here.

@@ -51,8 +51,8 @@ class FG_eval {
 
     // Reference State Cost
     for (int index = 0; index < N; index++) {
-      fg[0] += 2500 * CppAD::pow(vars[cte_start + index] , 2);
-      fg[0] += 2500 * CppAD::pow(vars[epsi_start + index] , 2);
+      fg[0] += 1500 * CppAD::pow(vars[cte_start + index] , 2);
+      fg[0] += 1500 * CppAD::pow(vars[epsi_start + index] , 2);
       fg[0] += CppAD::pow(vars[v_start + index] - ref_v, 2);
     }
 
@@ -93,6 +93,11 @@ class FG_eval {
       AD<double> delta0 = vars[delta_start + index];
       AD<double> a0 = vars[a_start + index];
 
+      //-->Adjust or latency
+      if (index > 1) {
+    	  	  delta0 = vars[delta_start + index - 2];
+		  a0 = vars[a_start + index - 2];
+      }
       AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * pow(x0,2) + coeffs[3] * pow(x0,3);
       AD<double> psides0 = CppAD::atan(coeffs[1] + (2 * coeffs[2] * x0) + (3 * coeffs[3]* pow(x0,2) ));
 
